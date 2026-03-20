@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>El Rancho</title>
+
+  <style>
+:root {
+    --rojo-oscuro: #8B0000;
+    --negro: #1a1a1a;
+    --blanco: #ffffff;
+    --gris-claro: #f4f4f4;
+}
+
+body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--gris-claro); color: var(--negro); }
+header { background-color: var(--rojo-oscuro); color: var(--blanco); padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+.container { padding: 15px; max-width: 600px; margin: auto; }
+.screen { display: none; }
+.active { display: block; }
+.btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+.btn-main { background-color: var(--rojo-oscuro); color: white; }
+.btn-sec { background-color: var(--negro); color: white; }
+.btn-add { background-color: #27ae60; color: white; }
+
+.card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid var(--rojo-oscuro); box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; transition: 0.3s; }
+.btn-del { position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 12px; }
+
+input { width: 100%; padding: 10px; margin: 5px 0 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+.flex { display: flex; gap: 8px; }
+.flex div { flex: 1; }
+
+.table-container { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th { background: var(--negro); color: white; padding: 12px 5px; }
+td { border: 1px solid #eee; padding: 10px 4px; text-align: center; cursor: pointer; }
+
+/* Colores de estado */
+.status-pill { padding: 4px 8px; border-radius: 12px; color: white; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+.bg-verde { background-color: #27ae60; }
+.bg-naranja { background-color: #f39c12; }
+
+.resumen-box { background: var(--negro); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 15px; }
+.resumen-item { font-size: 1.1rem; margin: 12px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+.highlight { color: #ff4d4d; font-weight: bold; font-size: 1.3rem; }
+.resaltar-cliente { border: 3px solid #f1c40f !important; transform: scale(1.02); }
+
+  </style>
+
+</head>
+<body>
+<header>
+    <h1 style="margin:0; letter-spacing: 2px;">EL RANCHO</h1>
+</header>
+
+<div class="container">
+
+    <div id="scr-home" class="screen active">
+        <button class="btn btn-main" onclick="nav('scr-config')">➕ Agregar nueva lista de pedidos</button>
+        <button class="btn btn-sec" onclick="verHistorial()">📋 Ver historial de pedidos</button>
+    </div>
+
+    <div id="scr-config" class="screen">
+        <div class="card">
+            <h3>Configuración del Día</h3>
+            <label>Fecha</label>
+            <input type="date" id="conf-fecha">
+            <label>Sopa del día</label>
+            <input type="text" id="conf-sopa" placeholder="Ej: Maní">
+            <label>Nombre del Segundo 1</label>
+            <input type="text" id="conf-s1" placeholder="Ej: Chuleta">
+            <label>Nombre del Segundo 2</label>
+            <input type="text" id="conf-s2" placeholder="Ej: Asado">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-sec" style="flex: 1;" onclick="nav('scr-home')">Cancelar</button>
+                <button class="btn btn-main" style="flex: 2;" onclick="iniciarPedidos()">▶️ Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scr-pedidos" class="screen">
+        <div id="header-pedidos" style="display: flex; flex-direction: column; gap: 5px; position: sticky; top: 0; background: var(--gris-claro); padding: 10px 0; z-index: 100;">
+            <div style="display: flex; justify-content: space-between;">
+                <button class="btn btn-sec" style="width: 30%; margin:0; padding: 10px; font-size: 13px;" onclick="nav('scr-config')">◀️ Menú</button>
+                <button class="btn btn-add" style="width: 68%; margin:0; padding: 10px;" onclick="agregarCliente()">➕ Agregar Cliente</button>
+            </div>
+            <button class="btn btn-main" style="margin: 5px 0 0 0; padding: 10px;" onclick="nav('scr-resumen-tabla')">📋 Ver Resumen de Tabla</button>
+        </div>
+        <div id="lista-clientes"></div>
+    </div>
+
+    <div id="scr-resumen-tabla" class="screen">
+        <h3 style="text-align: center;">RESUMEN</h3>
+        <div class="table-container">
+            <table id="tabla-excel">
+                <thead>
+                    <tr>
+                        <th>Sección</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Pedido</th>
+                        <th>Pago</th>
+                        <th>Taper</th>
+                    </tr>
+                </thead>
+                <tbody id="body-tabla"></tbody>
+            </table>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-sec" onclick="nav('scr-pedidos')">◀️ Atrás</button>
+            <button class="btn btn-main" onclick="mostrarCierreFinal()">✅ FINALIZAR DÍA</button>
+        </div>
+    </div>
+
+    <div id="scr-final" class="screen">
+        <div class="resumen-box">
+            <h2 style="border-bottom: 2px solid var(--rojo-oscuro); padding-bottom: 10px;">REPORTE FINAL</h2>
+            <div class="resumen-item" id="res-s1"></div>
+            <div class="resumen-item" id="res-s2"></div>
+            <div class="resumen-item">Total platos: <span class="highlight" id="res-total-platos">0</span></div>
+            <div class="resumen-item">Total dinero: <span class="highlight" id="res-total-dinero">0</span> Bs</div>
+            <div id="lista-deben-taper" style="font-size: 0.9rem; color: #aaa; margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;"></div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-sec" style="flex: 1;" onclick="nav('scr-resumen-tabla')">◀️ Corregir</button>
+            <button class="btn btn-main" style="flex: 2;" onclick="guardarYSalir()">💾 Guardar y Salir</button>
+        </div>
+    </div>
+</div>
+
+
+
+  <script>
+let appData = {
+    config: { fecha: '', sopa: '', s1: '', s2: '' },
+    clientes: []
+};
+
+// 🔥 GUARDADO AUTOMÁTICO
+function guardarAuto() {
+    localStorage.setItem('rancho_actual', JSON.stringify(appData));
+}
+
+function nav(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+    if(screenId === 'scr-resumen-tabla') renderTabla();
+    window.scrollTo(0,0);
+}
+
+function iniciarPedidos() {
+    appData.config.fecha = document.getElementById('conf-fecha').value;
+    appData.config.sopa = document.getElementById('conf-sopa').value;
+    appData.config.s1 = document.getElementById('conf-s1').value || "S1";
+    appData.config.s2 = document.getElementById('conf-s2').value || "S2";
+    
+    if(appData.clientes.length === 0) agregarCliente();
+
+    guardarAuto(); // 🔥 guarda config
+    nav('scr-pedidos');
+}
+
+function agregarCliente() {
+    const nuevo = {
+        id: "id-" + Date.now(),
+        nombre: '',
+        seccion: '',
+        cant1: 0,
+        cant2: 0,
+        entregado: false,
+        taper: false,
+        debeTaper: '',
+        pago: 0
+    };
+    appData.clientes.unshift(nuevo);
+    renderClientes();
+    guardarAuto(); // 🔥 guarda
+}
+
+function eliminarCliente(id) {
+    if(confirm("¿Seguro que quieres borrar este cliente?")) {
+        appData.clientes = appData.clientes.filter(c => c.id !== id);
+        renderClientes();
+        guardarAuto(); // 🔥 guarda
+    }
+}
+
+function renderClientes() {
+    const contenedor = document.getElementById('lista-clientes');
+    contenedor.innerHTML = '';
+    appData.clientes.forEach((c, index) => {
+        contenedor.innerHTML += `
+            <div class="card" id="${c.id}">
+                <button class="btn-del" onclick="eliminarCliente('${c.id}')">X</button>
+                <div class="flex">
+                    <div><label>Sección</label><input type="text" placeholder="Ej: Norte" value="${c.seccion}" onchange="update(${index}, 'seccion', this.value)"></div>
+                    <div><label>Cliente</label><input type="text" placeholder="Nombre" value="${c.nombre}" onchange="update(${index}, 'nombre', this.value)"></div>
+                </div>
+                <div class="flex" style="background: #f4f4f4; padding: 10px; border-radius: 5px;">
+                    <div><label>${appData.config.s1}</label><input type="number" value="${c.cant1}" onchange="update(${index}, 'cant1', this.value)"></div>
+                    <div><label>${appData.config.s2}</label><input type="number" value="${c.cant2}" onchange="update(${index}, 'cant2', this.value)"></div>
+                </div>
+                <div class="flex" style="margin-top:10px;">
+                    <div><input type="checkbox" ${c.entregado ? 'checked' : ''} onchange="update(${index}, 'entregado', this.checked)"> Entregado</div>
+                    <div><input type="checkbox" ${c.taper ? 'checked' : ''} onchange="update(${index}, 'taper', this.checked)"> Trajo Taper</div>
+                </div>
+                <input type="text" value="${c.debeTaper}" placeholder="¿Debe taper?" onchange="update(${index}, 'debeTaper', this.value)">
+                <div class="flex" style="align-items: center;">
+                    <span style="font-weight:bold">Pago:</span>
+                    <input type="number" value="${c.pago}" onchange="update(${index}, 'pago', this.value)">
+                    <span>Bs</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function update(index, campo, valor) {
+    if (['cant1', 'cant2', 'pago'].includes(campo)) valor = Number(valor);
+    appData.clientes[index][campo] = valor;
+
+    guardarAuto(); // 🔥 guarda cada cambio
+}
+
+function renderTabla() {
+    const body = document.getElementById('body-tabla');
+    body.innerHTML = '';
+    let listaOrdenada = [...appData.clientes];
+    listaOrdenada.sort((a, b) => a.seccion.toLowerCase().localeCompare(b.seccion.toLowerCase()));
+
+    listaOrdenada.forEach(c => {
+        const claseEstado = c.entregado ? 'bg-verde' : 'bg-naranja';
+        const textoEstado = c.entregado ? 'SÍ' : 'NO';
+        body.innerHTML += `
+            <tr onclick="irACliente('${c.id}')">
+                <td style="font-weight:bold; color: #8B0000;">${c.seccion || '---'}</td>
+                <td>${c.nombre || '---'}</td>
+                <td><span class="status-pill ${claseEstado}">${textoEstado}</span></td>
+                <td>${c.cant1} / ${c.cant2}</td>
+                <td>${c.pago} Bs</td>
+                <td>${c.taper ? '🆗' : '⚠️'}</td>
+            </tr>
+        `;
+    });
+}
+
+function irACliente(clienteId) {
+    nav('scr-pedidos');
+    setTimeout(() => {
+        const elemento = document.getElementById(clienteId);
+        if (elemento) {
+            const offset = 120;
+            const bodyRect = document.body.getBoundingClientRect().top;
+            const elementRect = elemento.getBoundingClientRect().top;
+            window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+            elemento.classList.add('resaltar-cliente');
+            setTimeout(() => elemento.classList.remove('resaltar-cliente'), 2000);
+        }
+    }, 100);
+}
+
+function mostrarCierreFinal() {
+    let t1 = 0, t2 = 0, tDinero = 0, deben = [];
+    appData.clientes.forEach(c => {
+        t1 += Number(c.cant1); 
+        t2 += Number(c.cant2); 
+        tDinero += Number(c.pago);
+        if(!c.taper && c.nombre) deben.push(c.nombre);
+    });
+    document.getElementById('res-s1').innerHTML = `Total ${appData.config.s1}: <span class="highlight">${t1}</span>`;
+    document.getElementById('res-s2').innerHTML = `Total ${appData.config.s2}: <span class="highlight">${t2}</span>`;
+    document.getElementById('res-total-platos').innerText = t1 + t2;
+    document.getElementById('res-total-dinero').innerText = tDinero;
+    document.getElementById('lista-deben-taper').innerText = deben.length > 0 ? "Deben táper: " + deben.join(", ") : "Nadie debe táper.";
+    nav('scr-final');
+}
+
+function guardarYSalir() {
+    let historial = JSON.parse(localStorage.getItem('rancho_historial') || '[]');
+    historial.push({ ...appData, id_registro: Date.now() });
+    localStorage.setItem('rancho_historial', JSON.stringify(historial));
+    
+    localStorage.removeItem('rancho_actual'); // 🔥 limpia el día actual
+    alert("Día guardado.");
+    location.reload();
+}
+
+function verHistorial() {
+    let historial = JSON.parse(localStorage.getItem('rancho_historial') || '[]');
+    alert("Días en historial: " + historial.length);
+}
+
+// 🔥 RECUPERAR DATOS AL ABRIR
+window.onload = function() {
+    const dataGuardada = localStorage.getItem('rancho_actual');
+    if (dataGuardada) {
+        appData = JSON.parse(dataGuardada);
+        renderClientes();
+    }
+
+    document.getElementById('conf-fecha').valueAsDate = new Date();
+};
+  </script>
+
+</body>
+</html>
